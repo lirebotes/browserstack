@@ -1,0 +1,35 @@
+name: 'BrowserStack Remote Test'
+on: 
+  push:
+  pull_request:
+  schedule:
+    - cron: '1 1 29 2 *'
+jobs:
+  ubuntu-job:
+    runs-on: ubuntu-latest  # Can be self-hosted runner also
+    strategy:
+      matrix:
+        browser: [config/parallelChrome.json,config/parallelSafari.json,config/parallelFirefox.json]
+    env: 
+      CONFIG_FILE: ${{ matrix.browser }}
+    name: 'Parallel Test on Ubuntu'
+    steps:
+      - name: 'BrowserStack Env Setup'  # Invokes the setup-env action
+        uses: browserstack/github-actions/setup-env@master
+        with:
+          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+
+      - name: 'Checkout the repository'
+        uses: actions/checkout@v2
+
+      - name: 'install requirements'
+        run: pip install -r requirements.txt
+
+      - name: 'Run Behave'
+        run: python3 -m behave features/single.feature
+
+      - name: 'BrowserStackLocal Stop'  # Terminating the BrowserStackLocal tunnel connection
+        uses: browserstack/github-actions/setup-local@master
+        with:
+          local-testing: stop
